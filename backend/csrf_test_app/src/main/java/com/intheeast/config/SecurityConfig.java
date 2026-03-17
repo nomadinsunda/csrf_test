@@ -26,7 +26,7 @@ public class SecurityConfig {
     @Bean
     public CsrfTokenRequestAttributeHandler csrfTokenRequestAttributeHandler() {
         CsrfTokenRequestAttributeHandler handler = new CsrfTokenRequestAttributeHandler();
-        // 속성 이름을 null로 설정하여 '지연된 토큰' 메커니즘을 끄고 즉시 토큰을 생성/갱신하도록 함
+        // 속성 이름을 null로 설정[handler.setCsrfRequestAttributeName(null);]하여 '지연된 토큰' 메커니즘을 끄고 즉시 토큰을 생성/갱신하도록 함
         /*
           set-cookie XSRF-TOKEN=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT
 
@@ -42,8 +42,8 @@ public class SecurityConfig {
           - CsrfTokenRepository: 검사가 끝나면 "자, 이 토큰은 썼으니까 다음을 위해 새 토큰을 준비하자"라고 결정합니다.
 
           2. 핸들러의 "진짜" 디폴트 동작 (BREACH 방어)
-          CsrfTokenRequestAttributeHandler의 기본 동작은 토큰을 폐기하는 것이 아니라, 보안을 위해 토큰을 매번 다르게 보이도록 "변장(Masking)" 시키는 것입니다.
-          Spring Security 6의 기본 핸들러(사실은 XorCsrfTokenRequestAttributeHandler)는 원본 UUID 토큰에 무작위 값을 섞어(XOR 연산) 매 응답마다 겉모습이 다른 토큰을 보냅니다.
+          CsrfTokenRequestAttributeHandler의 디폴트 동작은 토큰을 폐기하는 것이 아니라, 보안을 위해 토큰을 매번 다르게 보이도록 "변장(Masking)" 시키는 것입니다.
+          Spring Security6의 기본 핸들러(사실은 XorCsrfTokenRequestAttributeHandler)는 원본 UUID 토큰에 무작위 값을 섞어(XOR 연산) 매 응답마다 겉모습이 다른 토큰을 보냅니다.
           - 클라이언트 입장에서는 토큰 값이 바뀌었으니 "기존 것이 폐기되고 새것이 왔다"고 느낄 수 있습니다.
           - 하지만 실제 서버 내부의 원본 UUID(Raw Token)는 그대로 유지되고 있을 수도 있습니다.
 
@@ -54,7 +54,7 @@ public class SecurityConfig {
           - 응답 단계: 서버는 "검증 끝났으니 기존 쿠키는 지워야지(Max-Age=0)"라고 응답을 준비합니다.
           - 누락: 이때 핸들러가 새 토큰을 즉시 생성해서 Set-Cookie로 덮어써 줘야 하는데, 지연 로딩 모드라면 "아무도 새 토큰 달라고 안 했네? 그럼 그냥 삭제 명령만 보내자"하고 끝나버립니다.
 
-          👉 그래서 브라우저에는 삭제 명령만 전달되고, 새 토큰은 오지 않아 유실되는 것입니다.
+          👉 그래서 브라우저에게는 삭제 명령만 전달되고, 새 토큰은 오지 않아 유실되는 것입니다.
 
           4. setCsrfRequestAttributeName(null)의 진짜 의미
           이 설정을 하면 핸들러가 다음과 같이 행동합니다.
@@ -78,14 +78,14 @@ public class SecurityConfig {
                 // 3. CSRF 설정: 쿠키 방식으로 전달
                 // CookieCsrfTokenRepository는 디폴트로 쿠키에 SameSite 속성을 명시하지 않습니다.
                 // 이 경우, 최신 브라우저(Chrome 80 버전 이후)는 보안을 위해 이 쿠키를 Lax로 간주합니다.
-                // 프런트엔드(localhost:5501)와 백엔드(localhost:8080)는 Same-Site이기 때문에,
+                // 프런트엔드(localhost:5500)와 백엔드(localhost:8080)는 Same-Site이기 때문에,
                 // Lax 설정 상태에서도 브라우저가 쿠키를 정상적으로 서버에 실어 보내는 것.
                 // 그리고 CookieCsrfTokenRepository의 Secure는 디폴트로 false 임
                 // Set-Cookie: XSRF-TOKEN=...; Path=/
                 // Path=/ 는 CookieCsrfTokenRepository의 cookiePath가 디폴트로 "/" 이기 때문에 Path=/로 설정됩니다.
                 .csrf(csrf -> csrf
                                 .ignoringRequestMatchers("/api/init") // 토큰 발급용 경로는 CSRF 검증 패스
-                                // CookieCsrfTokenRepository는 기본적으로 매 응답마다 토큰을 갱신
+                                // CookieCsrfTokenRepository는 디폴트로 매 응답마다 토큰을 갱신
                                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                                 // 이 핸들러는 디폴트로 토큰을 '지연'시킵니다. POST 요청이 성공한 후 응답이 나갈 때,
                                 // 핸들러가 "이미 검증 끝난 토큰"이라고 판단하여 새 쿠키 생성을 무시할 수 있습니다.
