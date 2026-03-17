@@ -113,10 +113,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         // 웹 브라우저의 주소창에서 http://localhost:5500/index.html 로 입력해서 테스트를 수행해야 합니다.
-        // 라이브 서버가 자동으로 index.html을 호스팅할 때 주소를 http://127.0.0.1:5500/index.html로 실행시키므로,
-        // 우리 서버는 쿠키 이름을 http://127.0.0.1:5500으로 저장합니다.
-        // 그래서 웹 페이지의 자바스크립트 코드 document.cookie 는 쿠키 저장소에서 http://localhost:5500으로 찾기 때문에
-        // 쿠키가 없다고 해서 csrt 토큰을 보낼 수가 없음.
+        // 이유는 README.md를 참조하세요
         config.setAllowedOrigins(List.of("http://localhost:5500"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         /*
@@ -126,6 +123,7 @@ public class SecurityConfig {
          3. 서버 (응답 - setAllowedHeaders): 응, 내가 목록을 보니까 Content-Type, X-XSRF-TOKEN, Authorization은 허용된 헤더(AllowedHeaders) 리스트에 있네. 써도 좋아!
          4. 브라우저 (안심): 오케이! 그럼 이제 진짜 데이터랑 헤더를 실어서 진짜 POST 요청을 보낼게.
          */
+        // For Double Submit Cookie
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-XSRF-TOKEN"));
         config.setExposedHeaders(List.of("XSRF-TOKEN")); // 클라이언트 JS가 이 헤더를 볼 수 있게 허용(access-control-expose-headers XSRF-TOKEN)
         // Expose-Headers는 서버가 준 '특별한 선물(커스텀 헤더)'을 자바스크립트가 포장을 뜯어서 확인할 수 있게 해주는 '개봉 허가증'
